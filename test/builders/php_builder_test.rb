@@ -46,7 +46,11 @@ end
 class BuilderPhpCommandsTests < BuilderPhpTestCase
   def test_setup_env
     commands_any_instance.expects(:exec).
-      with("phpenv global php-5.3.8").
+      with("test -f composer.json", :echo => false).
+      once
+
+    commands_any_instance.expects(:exec).
+      with("phpenv global 5.3.8").
       once
 
     new_commands.setup_env
@@ -54,7 +58,11 @@ class BuilderPhpCommandsTests < BuilderPhpTestCase
 
   def test_setup_env_with_other_env_vars
     commands_any_instance.expects(:exec).
-      with("phpenv php-5.3.8").
+      with("test -f composer.json", :echo => false).
+      once
+
+    commands_any_instance.expects(:exec).
+      with("phpenv global 5.3.8").
       once
 
     commands_any_instance.expects(:exec).
@@ -62,5 +70,37 @@ class BuilderPhpCommandsTests < BuilderPhpTestCase
       once.returns(true)
 
     new_commands(:env => "FOO=bar").setup_env
+  end
+
+  def test_commands_install_dependencies_without_composer
+    commands_any_instance.expects(:exec).
+      with("test -f composer.json", :echo => false).
+      once.returns(false)
+
+    assert new_commands.run_install_dependencies
+  end
+
+  def test_commands_install_dependencies_with_composer_without_args
+    commands_any_instance.expects(:exec).
+      with("test -f composer.json", :echo => false).
+      once.returns(true)
+
+    commands_any_instance.expects(:exec).
+      with("composer install", :timeout => :install).
+      once.returns(true)
+
+    assert new_commands.run_install_dependencies
+  end
+
+  def test_commands_install_dependencies_with_composer_with_args
+    commands_any_instance.expects(:exec).
+      with("test -f composer.json", :echo => false).
+      once.returns(true)
+
+    commands_any_instance.expects(:exec).
+      with("composer install --foobar", :timeout => :install).
+      once.returns(true)
+
+    assert new_commands(:composer_args => '--foobar').run_install_dependencies
   end
 end
